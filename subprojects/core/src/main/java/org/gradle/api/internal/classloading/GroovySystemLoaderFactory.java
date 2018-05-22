@@ -17,37 +17,12 @@
 package org.gradle.api.internal.classloading;
 
 import org.gradle.api.GradleException;
-import org.gradle.util.VersionNumber;
-
-import java.lang.reflect.Method;
 
 public class GroovySystemLoaderFactory {
-    public static final NoOpGroovySystemLoader NOT_BROKEN = new NoOpGroovySystemLoader();
 
     public GroovySystemLoader forClassLoader(ClassLoader classLoader) {
         try {
-            Class<?> groovySystem;
-            try {
-                groovySystem = classLoader.loadClass("groovy.lang.GroovySystem");
-            } catch (ClassNotFoundException e) {
-                // Not a Groovy implementation, or not an implementation that we need to deal with
-                return NOT_BROKEN;
-            }
-            if (groovySystem.getClassLoader() != classLoader) {
-                // Groovy implementation visible from somewhere else
-                return NOT_BROKEN;
-            }
-
-            String versionString;
-            try {
-                Method getVersion = groovySystem.getDeclaredMethod("getVersion");
-                versionString = (String) getVersion.invoke(null);
-            } catch (NoSuchMethodException ex) {
-                return NOT_BROKEN;
-            }
-            VersionNumber groovyVersion = VersionNumber.parse(versionString);
-            boolean isFaultyGroovy = groovyVersion.getMajor() == 2 && groovyVersion.getMinor() == 4;
-            return isFaultyGroovy ? new LeakyOnJava7GroovySystemLoader(classLoader) : NOT_BROKEN;
+            return new LeakyOnJava7GroovySystemLoader(classLoader);
         } catch (Exception e) {
             throw new GradleException("Could not inspect the Groovy system for ClassLoader " + classLoader, e);
         }
