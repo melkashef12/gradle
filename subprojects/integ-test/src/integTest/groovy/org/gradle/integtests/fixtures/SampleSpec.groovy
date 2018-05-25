@@ -28,6 +28,10 @@ class SampleSpec extends Specification {
     @Rule
     Sample sample = new Sample(testDirectoryProvider, 'java/multiproject')
 
+    def setup() {
+        executer.usingInitScript(RepoScriptBlockUtil.createMirrorInitScript())
+    }
+
     def 'sample dir'() {
         // Sample.dir is named after sample, test method and test class
         expect:

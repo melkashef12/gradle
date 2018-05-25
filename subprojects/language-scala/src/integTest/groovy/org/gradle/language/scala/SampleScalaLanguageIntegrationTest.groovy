@@ -17,14 +17,20 @@
 package org.gradle.language.scala
 
 import org.gradle.integtests.fixtures.AbstractIntegrationSpec
+import org.gradle.integtests.fixtures.RepoScriptBlockUtil
 import org.gradle.integtests.fixtures.Sample
 import org.gradle.test.fixtures.archive.JarTestFixture
+import org.junit.Before
 import org.junit.Rule
 
 class SampleScalaLanguageIntegrationTest extends AbstractIntegrationSpec {
 
     @Rule
     Sample sample = new Sample(temporaryFolder, "jvmComponents/scala")
+
+    def setup() {
+        executer.usingInitScript(RepoScriptBlockUtil.createMirrorInitScript())
+    }
 
     def "can build scala based jvm component"() {
         setup:
