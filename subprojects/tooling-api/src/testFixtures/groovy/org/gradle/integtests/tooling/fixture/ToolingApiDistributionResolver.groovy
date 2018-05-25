@@ -23,6 +23,9 @@ import org.gradle.api.internal.project.ProjectInternal
 import org.gradle.integtests.fixtures.RepoScriptBlockUtil
 import org.gradle.integtests.fixtures.executer.GradleContextualExecuter
 import org.gradle.integtests.fixtures.executer.IntegrationTestBuildContext
+import org.gradle.internal.concurrent.CompositeStoppable
+import org.gradle.internal.concurrent.Stoppable
+import org.gradle.internal.service.scopes.GradleUserHomeScopeServiceRegistry
 import org.gradle.test.fixtures.file.TestNameTestDirectoryProvider
 import org.gradle.testfixtures.ProjectBuilder
 
@@ -32,6 +35,7 @@ class ToolingApiDistributionResolver {
     private final IntegrationTestBuildContext buildContext = new IntegrationTestBuildContext()
     private final TestNameTestDirectoryProvider temporaryFolder = new TestNameTestDirectoryProvider()
     private boolean useExternalToolingApiDistribution = false
+    private CompositeStoppable stopLater = new CompositeStoppable()
 
     ToolingApiDistributionResolver() {
         resolutionServices = createResolutionServices()
@@ -72,6 +76,15 @@ class ToolingApiDistributionResolver {
             .withProjectDir(temporaryFolder.getTestDirectory())
             .withGradleUserHomeDir(buildContext.gradleUserHomeDir)
             .build()
+
+        def userHomeScopeServiceRegistry = project.services.get(GradleUserHomeScopeServiceRegistry)
+        def gradleUserHomeServices = userHomeScopeServiceRegistry.getServicesFor(buildContext.gradleUserHomeDir)
+        stopLater.add(new Stoppable() {
+            @Override
+            void stop() {
+                userHomeScopeServiceRegistry.release(gradleUserHomeServices)
+            }
+        })
         return project.services.get(DependencyResolutionServices)
     }
 
@@ -80,9 +93,8 @@ class ToolingApiDistributionResolver {
         this
     }
 
-    void cleanup() {
+    void stop() {
         temporaryFolder.cleanup()
+        stopLater.stop()
     }
-
-    void stop() { }
 }
